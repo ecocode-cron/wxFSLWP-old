@@ -1,0 +1,16 @@
+--- #YAML:1.0
+name: Wx-Perl-FSHandler-LWP
+version: 0.01
+license: perl
+distribution_type: module
+requires:
+  IO::Scalar: 2
+  Wx: 0.13
+recommends: {}
+build_requires: {}
+conflicts: {}
+provides:
+  Wx::Perl::FSHandler::LWP:
+    file: lib/Wx/Perl/FSHandler/LWP.pm
+    version: 0.01
+generated_by: Module::Build version 0.18

@@ -1,0 +1,5 @@
+Build.PL
+MANIFEST
+META.yml
+lib/Wx/Perl/FSHandler/LWP.pm
+t/01_compile.t
