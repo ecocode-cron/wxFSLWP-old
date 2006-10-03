@@ -22,13 +22,15 @@ superior replacement for C<wxInternetFSHandler>.
 
 =cut
 
-use strict;
 use Wx::FS;
+
+use strict;
 use base 'Wx::PlFileSystemHandler';
+
 use LWP::UserAgent;
 use IO::Scalar;
 
-$Wx::Perl::FSHandler::LWP::VERSION = '0.01';
+$Wx::Perl::FSHandler::LWP::VERSION = '0.02';
 
 =head2 new
 
@@ -48,24 +50,39 @@ sub new {
     return $self;
 }
 
+=head2 CanOpen
+
+Called internally by C<Wx::FileSystem>. Calls C<is_protocol_supported>
+on the user agent to determine if the location can be opened.
+
+=cut
+
 sub CanOpen {
     my( $self, $location ) = @_;
-    my $proto = $self->get_protocol( $location );
+    my $uri = URI->new( $location );
 
-    return $self->user_agent->is_protocol_supported( $proto );
+    return $self->user_agent->is_protocol_supported( $uri->scheme );
 }
+
+=head2 OpenFile
+
+Called internally by C<Wx::FileSystem>. Uses the user agent to fetch
+the URL and returns a C<Wx::FSFile> representing the result.
+
+=cut
 
 sub OpenFile {
     my( $self, $fs, $location ) = @_;
-    my $request = HTTP::Request->new( 'GET', $location );
+    my $uri = URI->new( $location );
+    my $request = HTTP::Request->new( 'GET', $uri );
     my $response = $self->user_agent->request( $request, undef );
 
     return undef unless $response->is_success;
 
     my $value = $response->content;
     my $fh = IO::Scalar->new( \$value );
-    my $file = Wx::FSFile->new( $fh, $location, $response->content_type,
-                                $self->get_anchor( $location ) );
+    my $file = Wx::FSFile->new( $fh, $response->base, $response->content_type,
+                                $uri->fragment || '' );
 
     return $file;
 }
@@ -79,8 +96,6 @@ Returns the C<LWP::UserAgent> object used to handle requests.
 =cut
 
 sub user_agent   { $_[0]->{user_agent} }
-sub get_protocol { $_[1] =~ m/^(\w+):/ ? $1 : '' }
-sub get_anchor   { $_[1] =~ m/#([^#]*)$/ ? $1 : '' }
 
 =head1 ENVIRONMENTAL VARIABLES
 
@@ -88,11 +103,11 @@ See L<LWP::UserAgent|LWP::UserAgent>.
 
 =head1 AUTHOR
 
-Mattia Barbon <MBARBON@cpan.org>
+Mattia Barbon <mbarbon@cpan.org>
 
 =head1 LICENSE
 
-Copyright (c) 2003 Mattia Barbon.
+Copyright (c) 2003, 2006 Mattia Barbon.
 
 This package is free software; you can redistribute it and/or
 modify it under the same terms as Perl itself.
