@@ -30,7 +30,7 @@ use base 'Wx::PlFileSystemHandler';
 use LWP::UserAgent;
 use IO::Scalar;
 
-$Wx::Perl::FSHandler::LWP::VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head2 new
 
@@ -73,6 +73,12 @@ the URL and returns a C<Wx::FSFile> representing the result.
 
 sub OpenFile {
     my( $self, $fs, $location ) = @_;
+
+    # work around bug in Wx::FileSystem: remove artificial '//'
+    if(    index( $location, $fs->GetPath ) == 0
+        && substr( $location, length( $fs->GetPath ) - 1, 2 ) eq '//' ) {
+        substr $location, length( $fs->GetPath ) - 1, 2, '/';
+    }
     my $uri = URI->new( $location );
     my $request = HTTP::Request->new( 'GET', $uri );
     my $response = $self->user_agent->request( $request, undef );
@@ -81,7 +87,8 @@ sub OpenFile {
 
     my $value = $response->content;
     my $fh = IO::Scalar->new( \$value );
-    my $file = Wx::FSFile->new( $fh, $response->base, $response->content_type,
+    my $file = Wx::FSFile->new( $fh, $response->base,
+                                scalar $response->content_type,
                                 $uri->fragment || '' );
 
     return $file;
